@@ -285,9 +285,10 @@ export default {
 			left.className = 'file-position-left';
 			container.appendChild(left);
 
-			let icon = document.createElement('div');
-			icon.className = 'el-icon-document';
-			left.appendChild(icon);
+				let icon = document.createElement('div');
+				icon.className = 'chat-file-doc-icon';
+				icon.innerText = '📄';
+				left.appendChild(icon);
 
 			let right = document.createElement('div');
 			right.className = 'file-position-right';
@@ -337,6 +338,31 @@ export default {
 				this.$refs.content.append(divElement);
 			}
 			return divElement;
+		},
+		getPlainText() {
+			return this.$refs.content.innerText.replace(/\u00A0/g, ' ').trim();
+		},
+		setText(text) {
+			this.imageList = [];
+			this.fileList = [];
+			this.$refs.content.innerHTML = "";
+			let lines = (text || '').split(/\r?\n/);
+			if (lines.length === 0) {
+				lines = [''];
+			}
+			let lastNode = null;
+			lines.forEach(lineText => {
+				let line = document.createElement('div');
+				let textNode = document.createTextNode(lineText || '\u00A0');
+				line.appendChild(textNode);
+				this.$refs.content.appendChild(line);
+				lastNode = textNode;
+			});
+			this.isEmpty = !text || !text.trim();
+			this.focus();
+			if (lastNode) {
+				this.selectElement(lastNode, lastNode.textContent.length);
+			}
 		},
 		clear() {
 			this.empty();
@@ -507,11 +533,11 @@ export default {
 				justify-content: center;
 				align-items: center;
 
-				.el-icon-document {
-					font-size: 40px;
-					text-align: center;
-					color: #d42e07;
-				}
+					.chat-file-doc-icon {
+						font-size: 40px;
+						text-align: center;
+						color: #d42e07;
+					}
 			}
 
 			.file-position-right {

@@ -6,7 +6,7 @@
 					<div class="top">
 						<div class="user-head-image">
 							<head-image :name="userStore.userInfo.nickName" :size="38"
-								:url="userStore.userInfo.headImageThumb" @click.native="showSettingDialog = true">
+								:url="userStore.userInfo.headImageThumb" @click="showSettingDialog = true">
 							</head-image>
 						</div>
 						<div class="menu">
@@ -29,10 +29,10 @@
 						</div>
 					</div>
 
-					<div class="botoom">
-						<div class="bottom-item" @click="onSwtichFullScreen">
-							<i class="el-icon-full-screen"></i>
-						</div>
+						<div class="botoom">
+							<div class="bottom-item" @click="onSwtichFullScreen">
+								<el-icon><FullScreen /></el-icon>
+							</div>
 						<div class="bottom-item" @click="showSetting">
 							<span class="icon iconfont icon-setting" style="font-size: 20px"></span>
 						</div>
@@ -56,52 +56,53 @@
 
 <script>
 import HeadImage from '../components/common/HeadImage.vue';
-import Setting from '../components/setting/Setting.vue';
-import UserInfo from '../components/common/UserInfo.vue';
-import FullImage from '../components/common/FullImage.vue';
-import RtcPrivateVideo from '../components/rtc/RtcPrivateVideo.vue';
-import RtcPrivateAcceptor from '../components/rtc/RtcPrivateAcceptor.vue';
-import RtcGroupVideo from '../components/rtc/RtcGroupVideo.vue';
 
 export default {
 	components: {
 		HeadImage,
-		Setting,
-		UserInfo,
-		FullImage,
-		RtcPrivateVideo,
-		RtcPrivateAcceptor,
-		RtcGroupVideo
+		Setting: () => import('../components/setting/Setting.vue'),
+		UserInfo: () => import('../components/common/UserInfo.vue'),
+		FullImage: () => import('../components/common/FullImage.vue'),
+		RtcPrivateVideo: () => import('../components/rtc/RtcPrivateVideo.vue'),
+		RtcGroupVideo: () => import('../components/rtc/RtcGroupVideo.vue')
 	},
-	data() {
-		return {
-			showSettingDialog: false,
-			lastPlayAudioTime: new Date().getTime() - 1000,
-			reconnecting: false,
-			privateMessagesBuffer: [],
-			groupMessagesBuffer: []
-		}
-	},
-	methods: {
-		init() {
-			this.$eventBus.$on('openPrivateVideo', (rctInfo) => {
-				// 进入单人视频通话
-				this.$refs.rtcPrivateVideo.open(rctInfo);
-			});
-			this.$eventBus.$on('openGroupVideo', (rctInfo) => {
-				// 进入多人视频通话
-				this.$refs.rtcGroupVideo.open(rctInfo);
-			});
-			this.$eventBus.$on('openUserInfo', (user, pos) => {
-				// 打开用户卡片
-				this.$refs.userInfo.open(user, pos);
-			});
-			this.$eventBus.$on('openFullImage', url => {
-				// 图片全屏
-				this.$refs.fullImage.open(url);
-			});
-			this.configStore.setAppInit(false)
-			this.loadStore().then(() => {
+		data() {
+			return {
+				showSettingDialog: false,
+				lastPlayAudioTime: new Date().getTime() - 1000,
+				reconnecting: false,
+				privateMessagesBuffer: [],
+				groupMessagesBuffer: [],
+				openPrivateVideoHandler: null,
+				openGroupVideoHandler: null,
+				openUserInfoHandler: null,
+				openFullImageHandler: null
+			}
+		},
+		methods: {
+			init() {
+				this.openPrivateVideoHandler = (rctInfo) => {
+					// 进入单人视频通话
+					this.$refs.rtcPrivateVideo.open(rctInfo);
+				};
+				this.$eventBus.on('openPrivateVideo', this.openPrivateVideoHandler);
+				this.openGroupVideoHandler = (rctInfo) => {
+					// 进入多人视频通话
+					this.$refs.rtcGroupVideo.open(rctInfo);
+				};
+				this.$eventBus.on('openGroupVideo', this.openGroupVideoHandler);
+				this.openUserInfoHandler = ({ user, pos }) => {
+					// 打开用户卡片
+					this.$refs.userInfo.open(user, pos);
+				};
+				this.$eventBus.on('openUserInfo', this.openUserInfoHandler);
+				this.openFullImageHandler = (url) => {
+					// 图片全屏
+					this.$refs.fullImage.open(url);
+				};
+				this.$eventBus.on('openFullImage', this.openFullImageHandler);
+				this.configStore.setAppInit(false)
+				this.loadStore().then(() => {
 				// ws初始化
 				this.$wsApi.connect(process.env.VUE_APP_WS_URL, sessionStorage.getItem("accessToken"));
 				this.$wsApi.onConnect(() => {
@@ -481,13 +482,25 @@ export default {
 			immediate: true
 		}
 	},
-	mounted() {
-		this.init();
-	},
-	unmounted() {
-		this.$wsApi.close();
+		mounted() {
+			this.init();
+		},
+		unmounted() {
+			if (this.openPrivateVideoHandler) {
+				this.$eventBus.off('openPrivateVideo', this.openPrivateVideoHandler);
+			}
+			if (this.openGroupVideoHandler) {
+				this.$eventBus.off('openGroupVideo', this.openGroupVideoHandler);
+			}
+			if (this.openUserInfoHandler) {
+				this.$eventBus.off('openUserInfo', this.openUserInfoHandler);
+			}
+			if (this.openFullImageHandler) {
+				this.$eventBus.off('openFullImage', this.openFullImageHandler);
+			}
+			this.$wsApi.close();
+		}
 	}
-}
 </script>
 
 <style scoped lang="scss">

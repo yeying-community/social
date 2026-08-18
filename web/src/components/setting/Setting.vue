@@ -1,13 +1,14 @@
 <template>
-	<el-dialog v-dialogDrag class="setting" title="设置" :visible.sync="visible" width="420px" :before-close="onClose">
+		<el-dialog draggable class="setting" title="设置" :model-value="visible" @update:model-value="onVisibleChange"
+			width="420px" :before-close="onClose">
 		<el-form :model="userInfo" label-width="80px" :rules="rules" ref="settingForm" size="small">
 			<el-form-item label="头像" style="margin-bottom: 0 !important;">
 				<file-upload class="avatar-uploader" :action="imageAction" :showLoading="true" :maxSize="maxSize"
-					:isPermanent="true" @success="onUploadSuccess"
-					:fileTypes="['image/jpeg', 'image/png', 'image/jpg', 'image/webp']">
-					<img v-if="userInfo.headImage" :src="userInfo.headImage" class="avatar">
-					<i v-else class="el-icon-plus avatar-uploader-icon"></i>
-				</file-upload>
+						:isPermanent="true" @success="onUploadSuccess"
+						:fileTypes="['image/jpeg', 'image/png', 'image/jpg', 'image/webp']">
+						<img v-if="userInfo.headImage" :src="userInfo.headImage" class="avatar">
+						<el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+					</file-upload>
 			</el-form-item>
 			<el-form-item label="用户名">
 				<el-input disabled v-model="userInfo.userName" autocomplete="off" size="small"></el-input>
@@ -26,10 +27,12 @@
 			</el-form-item>
 		</el-form>
 
-		<span slot="footer" class="dialog-footer">
-			<el-button @click="onClose()">取 消</el-button>
-			<el-button type="primary" @click="onSubmit()">确 定</el-button>
-		</span>
+		<template #footer>
+			<span class="dialog-footer">
+				<el-button @click="onClose()">取 消</el-button>
+				<el-button type="primary" @click="onSubmit()">确 定</el-button>
+			</span>
+		</template>
 	</el-dialog>
 </template>
 
@@ -56,6 +59,11 @@ export default {
 		}
 	},
 	methods: {
+		onVisibleChange(value) {
+			if (!value) {
+				this.onClose();
+			}
+		},
 		onClose() {
 			this.$emit("close");
 		},

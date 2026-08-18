@@ -1,5 +1,6 @@
 <template>
-	<el-dialog v-dialogDrag class="chat-record" title="语音录制" :visible.sync="visible" width="600px" :before-close="onClose">
+		<el-dialog draggable class="chat-record" title="语音录制" :model-value="visible"
+			@update:model-value="onVisibleChange" width="600px" :before-close="onClose">
 		<div v-show="mode == 'RECORD'">
 			<div class="tip">{{ stateTip }}</div>
 			<div>时长: {{ state == 'STOP' ? 0 : parseInt(rc.duration) }}s</div>
@@ -44,6 +45,11 @@ export default {
 		}
 	},
 	methods: {
+		onVisibleChange(value) {
+			if (!value) {
+				this.onClose();
+			}
+		},
 		onClose() {
 			// 关闭前清除数据
 			this.rc.destroy();
@@ -100,6 +106,10 @@ export default {
 		},
 		onSendRecord() {
 			let wav = this.rc.getWAVBlob();
+			if (!wav) {
+				this.$message.error("录音数据为空，请重新录制");
+				return;
+			}
 			let name = new Date().getDate() + '.wav';
 			var formData = new window.FormData()
 			formData.append('file', wav, name);
@@ -117,6 +127,9 @@ export default {
 				}
 				this.$emit("send", data);
 				this.onClose();
+			}).catch((error) => {
+				const message = error?.message || error?.msg || error?.data?.message || "语音上传失败，请稍后重试";
+				this.$message.error(message);
 			})
 		}
 	}

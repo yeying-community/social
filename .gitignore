@@ -10,3 +10,5 @@
 uniapp/package-lock.json
 
 examples/
+output/
+test-results/
