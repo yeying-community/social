@@ -85,13 +85,12 @@ https://www.yuque.com/u1475064/imk5n2/qtezcg32q1d0dr29#SbvXq
 
 2.启动后端服务（数据库迁移归属 platform）
 ```
-mvn clean package
-java -jar ./platform/target/platform.jar
-java -jar ./server/target/server.jar
-java -jar ./rtc/target/rtc.jar
-java -jar ./web3-identity/target/web3-identity.jar
-# web3-graph / web3-incentive 暂为占位服务，可按需启动
+./cmd local-start
+./cmd local-status
+./cmd local-restart
+./cmd local-stop
 ```
+`./cmd` 会在首次启动时从各服务的 `src/main/resources/application*.yml` 引导本地配置到 `config/<service>/`，该目录结构与生产部署的 `/opt/deploy/social/config/<service>/` 保持一致；环境差异通过 `spring.profiles.active` 或 `SPRING_PROFILES_ACTIVE` 控制，本地默认来自配置文件的 `dev`。日志和 pid 写入 `target/local/`。如只启动部分服务，可追加服务名，例如 `./cmd local-start platform server`。
 
 3.启动前端web
 ```

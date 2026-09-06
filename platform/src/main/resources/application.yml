@@ -40,8 +40,8 @@ ai:
   timeout-ms: 10000
   max-context-messages: 20
 
-passport:
-  # Node Passport is the only authority for Wallet and Passkey authentication.
+identity:
+  # Node identity service is the authority for Wallet and Passkey authentication.
   # Override these in an external application.yml at startup.
   node-base-url:
   app-id:
