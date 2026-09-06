@@ -6,33 +6,39 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_DIR="${ROOT_DIR}/target/local"
 LOG_DIR="${LOCAL_DIR}/logs"
 PID_DIR="${LOCAL_DIR}/pids"
-LOCAL_CONFIG_DIR="${ROOT_DIR}/config/local"
-CONFIG_TEMPLATE_DIR="${ROOT_DIR}/config/templates"
+LOCAL_CONFIG_DIR="${ROOT_DIR}/config"
+LOCAL_RUNTIME_ENV="${LOCAL_CONFIG_DIR}/runtime.env"
+JAVA_BIN="${JAVA_BIN:-java}"
 
-DEFAULT_LOCAL_SERVICES=(platform server rtc)
-STOP_ORDER=(rtc server platform)
+DEFAULT_LOCAL_SERVICES=(platform server rtc web3-identity)
+STOP_ORDER=(web3-identity rtc server platform)
 
 usage() {
   cat <<'EOF'
 Usage:
   ./cmd local-start [service...]
   ./cmd local-stop [service...]
+  ./cmd local-restart [service...]
   ./cmd local-status [service...]
 
 Local services:
   platform  Spring Boot platform API, default port 8888
   server    IM WebSocket server, default port 8878
   rtc       Spring Boot RTC API, default port 8890
+  web3-identity  Spring Boot Web3 identity API, default port 8901
 
-With no service arguments, local-start starts platform/server/rtc and
-local-stop stops them in reverse order.
+With no service arguments, local-start starts platform/server/rtc/web3-identity,
+local-stop stops them in reverse order, and local-restart does both.
 
-Local configuration is read from config/local/<service>/application.yml when
-present, then each service's packaged application.yml and application-*.yml
-files. Missing local config files are bootstrapped from config/templates.
-This command writes logs/pids under target/local and local config under
-config/local. It does not use production bin/, logs/, pids/,
-config/<service>/, or scripts/starter.sh.
+Local configuration is read from config/<service>/, matching the production
+package layout under /opt/deploy/social/config/<service>/. Missing local config
+files are bootstrapped from each service's src/main/resources application*.yml
+and logback.xml files.
+If config/runtime.env exists, it is sourced for JAVA_BIN and JAVA_OPTS, matching
+the production starter. Runtime profile is controlled by spring.profiles.active
+in config files, or by SPRING_PROFILES_ACTIVE/JAVA_OPTS when explicitly set.
+This command writes logs/pids under target/local. It does not use production
+bin/, logs/, pids/, or scripts/starter.sh.
 
 Frontend is intentionally not managed here. Start it manually from web/ when
 needed.
@@ -58,15 +64,33 @@ ensure_local_dirs() {
   mkdir -p "${LOG_DIR}" "${PID_DIR}" "${LOCAL_CONFIG_DIR}"
 }
 
+load_local_runtime_env() {
+  if [[ -f "${LOCAL_RUNTIME_ENV}" ]]; then
+    # shellcheck disable=SC1090
+    source "${LOCAL_RUNTIME_ENV}"
+  fi
+  JAVA_BIN="${JAVA_BIN:-java}"
+  export JAVA_BIN JAVA_OPTS
+  if [[ -n "${SPRING_PROFILES_ACTIVE:-}" ]]; then
+    export SPRING_PROFILES_ACTIVE
+  fi
+}
+
 ensure_local_config() {
   local service="$1"
   local config_dir="${LOCAL_CONFIG_DIR}/${service}"
-  local config_file="${config_dir}/application.yml"
-  local template_file="${CONFIG_TEMPLATE_DIR}/${service}/application.yml"
+  local resource_dir="${ROOT_DIR}/${service}/src/main/resources"
+  local src_file dest_file
   mkdir -p "${config_dir}"
-  if [[ ! -f "${config_file}" && -f "${template_file}" ]]; then
-    cp "${template_file}" "${config_file}"
-    log "created local ${service} config from template: ${config_file}"
+
+  if [[ -d "${resource_dir}" ]]; then
+    while IFS= read -r src_file; do
+      dest_file="${config_dir}/$(basename "${src_file}")"
+      if [[ ! -f "${dest_file}" ]]; then
+        cp "${src_file}" "${dest_file}"
+        log "created local ${service} config file: ${dest_file}"
+      fi
+    done < <(find "${resource_dir}" -maxdepth 1 -type f \( -name "application*.yml" -o -name "logback.xml" \) | sort)
   fi
 }
 
@@ -84,7 +108,7 @@ pid_file() {
 
 assert_service() {
   case "$1" in
-    platform|server|rtc) ;;
+    platform|server|rtc|web3-identity) ;;
     *)
       echo "ERROR: unknown local service: $1" >&2
       usage >&2
@@ -130,7 +154,7 @@ cd "${ROOT_DIR}"
 rm -rf "${ROOT_DIR}/${service}/target/classes/db/migration"
 rm -f "${ROOT_DIR}/${service}/target/${service}.jar"
 mvn -pl "${service}" -am -DskipTests package
-exec java \${JAVA_OPTS:-} -Dspring.profiles.active="\${SPRING_PROFILES_ACTIVE:-dev}" -jar "${ROOT_DIR}/${service}/target/${service}.jar" ${spring_config_arg}
+exec "${JAVA_BIN}" \${JAVA_OPTS:-} -jar "${ROOT_DIR}/${service}/target/${service}.jar" ${spring_config_arg}
 EOF
   chmod +x "${run_file}"
   echo "${run_file}"
@@ -143,6 +167,7 @@ wait_started() {
     platform) marker="Started IMPlatformApp" ;;
     server) marker="Started IMServerApp" ;;
     rtc) marker="Started RtcApp" ;;
+    web3-identity) marker="Started Web3IdentityApp" ;;
   esac
   for _ in {1..90}; do
     if ! kill -0 "${pid}" 2>/dev/null; then
@@ -157,8 +182,9 @@ wait_started() {
 }
 
 local_start() {
+  load_local_runtime_env
   require_cmd mvn
-  require_cmd java
+  require_cmd "${JAVA_BIN}"
   ensure_local_dirs
   local service run_file log_file pid
   while IFS= read -r service; do
@@ -243,6 +269,11 @@ local_stop() {
   done < <(stop_services_or_default "$@")
 }
 
+local_restart() {
+  local_stop "$@"
+  local_start "$@"
+}
+
 local_status() {
   ensure_local_dirs
   local service file pid
@@ -270,6 +301,7 @@ fi
 case "${ACTION}" in
   local-start) local_start "$@" ;;
   local-stop) local_stop "$@" ;;
+  local-restart) local_restart "$@" ;;
   local-status) local_status "$@" ;;
   -h|--help|help|"") usage ;;
   *)

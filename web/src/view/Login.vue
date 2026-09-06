@@ -5,10 +5,10 @@
 			<el-form class="login-box" :model="loginForm" status-icon :rules="rules" ref="loginForm"
 				@keyup.enter="loginMode === 'wallet' && emailLoginVisible && submitForm('loginForm')">
 				<div class="login-mode-switch">
-					<el-tooltip :content="loginMode === 'passport' ? '钱包身份登录' : '通行证登录'" placement="left">
+					<el-tooltip :content="loginMode === 'identity' ? '钱包身份登录' : '通行证登录'" placement="left">
 						<div class="login-mode-switch-box" @click="switchLoginMode">
 							<span class="login-mode-switch-icon">
-								<svg v-if="loginMode === 'passport'" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M23 16a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v12ZM21 4H3v9h18V4ZM3 15v1h18v-1H3Zm3 6a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1Z" fill="currentColor"></path></svg>
+								<svg v-if="loginMode === 'identity'" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M23 16a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v12ZM21 4H3v9h18V4ZM3 15v1h18v-1H3Zm3 6a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1Z" fill="currentColor"></path></svg>
 								<svg v-else viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6.5 7.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1Z" fill="currentColor"></path><path d="M4.5 2.5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h7c1.1 0 2-.9 2-2v-7c0-1.1-.9-2-2-2h-7Zm0 2h7v7h-7v-7ZM11 16a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm0 3.5a1 1 0 1 1 2 0v1a1 1 0 1 1-2 0v-1Zm4-7.5a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm3.5 0a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1ZM15 17c0-1.1.9-2 2-2h2.5c1.1 0 2 .9 2 2v2.5c0 1.1-.9 2-2 2H17c-1.1 0-2-.9-2-2V17Zm4.5 0H17v2.5h2.5V17Zm-15-2c-1.1 0-2 .9-2 2v2.5c0 1.1.9 2 2 2H7c1.1 0 2-.9 2-2V17c0-1.1-.9-2-2-2H4.5Zm0 2H7v2.5H4.5V17ZM15 4.5c0-1.1.9-2 2-2h2.5c1.1 0 2 .9 2 2V7c0 1.1-.9 2-2 2H17c-1.1 0-2-.9-2-2V4.5Zm4.5 0H17V7h2.5V4.5Z" fill="currentColor"></path></svg>
 							</span>
 						</div>
@@ -20,7 +20,7 @@
 					<el-input type="text" v-model="loginForm.terminal" autocomplete="off"></el-input>
 				</el-form-item>
 				<transition name="login-mode" mode="out-in">
-					<div v-if="loginMode === 'passport'" class="login-qrcode">
+					<div v-if="loginMode === 'identity'" class="login-qrcode">
 						<div class="login-qrcode-frame" @click="refreshPassportLogin">
 							<img v-if="passportQrCode" class="login-qrcode-image" :src="passportQrCode" alt="通行证登录二维码" />
 							<span v-else class="login-qrcode-loading">{{ passportLoading ? '二维码生成中...' : '点击刷新二维码' }}</span>
@@ -40,7 +40,7 @@
 
 <script>
 import Icp from '../components/common/Icp.vue'
-import { createPassportLoginSession, getPassportLoginStatus } from '../api/passportAuth'
+import { createIdentityLoginSession, getIdentityLoginStatus } from '../api/identityAuth'
 import { walletLogin } from '../api/web3Auth'
 import QRCode from 'qrcode'
 export default {
@@ -96,19 +96,19 @@ export default {
 			return 'Social'
 		},
 		loginSubtitle() {
-			return this.loginMode === 'passport'
+			return this.loginMode === 'identity'
 				? '使用通行证完成身份验证后进入 Social。'
 				: '使用夜莺钱包授权钱包身份，Social 将读取已验证邮箱后进入工作区。'
 		}
 	},
 	methods: {
 		switchLoginMode() {
-			if (this.loginMode === 'passport') {
+			if (this.loginMode === 'identity') {
 				this.loginMode = 'wallet'
 				this.cancelPassportLogin()
 				return
 			}
-			this.loginMode = 'passport'
+			this.loginMode = 'identity'
 			this.startPassportLogin()
 		},
 		async walletSignIn() {
@@ -134,13 +134,13 @@ export default {
 			const requestSeq = ++this.passportRequestSeq
 			this.passportLoading = true
 			try {
-				const session = await createPassportLoginSession()
-				if (requestSeq !== this.passportRequestSeq || this.loginMode !== 'passport') return
+				const session = await createIdentityLoginSession()
+				if (requestSeq !== this.passportRequestSeq || this.loginMode !== 'identity') return
 				if (!session.verifyUrl) throw new Error('通行证服务未返回确认地址')
 				this.passportSession = session
 				this.passportStatus = '请使用手机相机或夜莺钱包扫码确认'
 				await this.renderPassportQrCode(session.verifyUrl)
-				if (requestSeq !== this.passportRequestSeq || this.loginMode !== 'passport') return
+				if (requestSeq !== this.passportRequestSeq || this.loginMode !== 'identity') return
 				this.pollPassportStatus()
 			} catch (error) {
 				this.$message.error(error && error.message ? error.message : "无法发起通行证登录")
@@ -175,7 +175,7 @@ export default {
 			if (!this.passportSession) return
 			const sessionId = this.passportSession.sessionId
 			try {
-				const result = await getPassportLoginStatus(sessionId)
+				const result = await getIdentityLoginStatus(sessionId)
 				if (!this.passportSession || this.passportSession.sessionId !== sessionId) return
 				if (result.status === 'approved' && result.login) {
 					sessionStorage.setItem('accessToken', result.login.accessToken)

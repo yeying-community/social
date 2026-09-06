@@ -3,17 +3,17 @@ package com.bx.implatform.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.bx.implatform.config.props.PassportProperties;
+import com.bx.implatform.config.props.IdentityProperties;
 import com.bx.implatform.entity.User;
 import com.bx.implatform.entity.WalletIdentity;
 import com.bx.implatform.exception.GlobalException;
 import com.bx.implatform.mapper.UserMapper;
 import com.bx.implatform.mapper.WalletIdentityMapper;
 import com.bx.implatform.service.LoginTokenService;
-import com.bx.implatform.service.PassportLoginService;
+import com.bx.implatform.service.IdentityLoginService;
 import com.bx.implatform.vo.LoginVO;
-import com.bx.implatform.vo.PassportLoginSessionVO;
-import com.bx.implatform.vo.PassportLoginStatusVO;
+import com.bx.implatform.vo.IdentityLoginSessionVO;
+import com.bx.implatform.vo.IdentityLoginStatusVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -41,11 +41,11 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PassportLoginServiceImpl implements PassportLoginService {
-    private static final String SESSION_KEY_PREFIX = "im:passport:login:";
+public class IdentityLoginServiceImpl implements IdentityLoginService {
+    private static final String SESSION_KEY_PREFIX = "im:identity:login:";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    private final PassportProperties passportProperties;
+    private final IdentityProperties identityProperties;
     private final RedisTemplate<String, Object> redisTemplate;
     private final WalletIdentityMapper walletIdentityMapper;
     private final UserMapper userMapper;
@@ -53,9 +53,9 @@ public class PassportLoginServiceImpl implements PassportLoginService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public PassportLoginSessionVO createSession() {
-        String appId = required(passportProperties.getAppId(), "通行证应用 ID 未配置");
-        String callbackUrl = required(passportProperties.getCallbackUrl(), "通行证回调地址未配置");
+    public IdentityLoginSessionVO createSession() {
+        String appId = required(identityProperties.getAppId(), "身份应用 ID 未配置");
+        String callbackUrl = required(identityProperties.getCallbackUrl(), "通行证回调地址未配置");
         String sessionId = UUID.randomUUID().toString();
         String verifier = randomBase64Url(64);
         String challenge = sha256Base64Url(verifier);
@@ -65,12 +65,12 @@ public class PassportLoginServiceImpl implements PassportLoginService {
         payload.put("state", sessionId);
         payload.put("codeChallenge", challenge);
         payload.put("codeChallengeMethod", "S256");
-        payload.put("scopes", passportProperties.getScopes());
-        payload.put("requestTtlMs", passportProperties.getSessionTtlSeconds() * 1000L);
+        payload.put("scopes", identityProperties.getScopes());
+        payload.put("requestTtlMs", identityProperties.getSessionTtlSeconds() * 1000L);
         Map<String, Object> data = nodeRequest(HttpMethod.POST, "/api/v1/public/identity/authorize/request", payload);
         String requestId = string(data.get("requestId"));
         if (requestId.isEmpty()) {
-            throw new GlobalException("通行证服务未返回授权请求");
+            throw new GlobalException("身份服务未返回授权请求");
         }
 
         Map<String, Object> session = new HashMap<>();
@@ -78,15 +78,15 @@ public class PassportLoginServiceImpl implements PassportLoginService {
         session.put("codeVerifier", verifier);
         session.put("redirectUri", callbackUrl);
         session.put("appId", appId);
-        redisTemplate.opsForValue().set(sessionKey(sessionId), session, Duration.ofSeconds(passportProperties.getSessionTtlSeconds()));
+        redisTemplate.opsForValue().set(sessionKey(sessionId), session, Duration.ofSeconds(identityProperties.getSessionTtlSeconds()));
 
-        PassportLoginSessionVO vo = new PassportLoginSessionVO();
+        IdentityLoginSessionVO vo = new IdentityLoginSessionVO();
         vo.setSessionId(sessionId);
         vo.setRequestId(requestId);
         vo.setAppId(appId);
         vo.setAudience(string(data.get("audience")));
         vo.setNonce(string(data.get("nonce")));
-        vo.setScopes(passportProperties.getScopes());
+        vo.setScopes(identityProperties.getScopes());
         vo.setVerifyUrl(resolveNodeUrl(string(data.get("verifyUrl"))));
         vo.setStatus(defaultString(data.get("status"), "pending"));
         vo.setExpiresAt(data.get("expiresAt") != null ? data.get("expiresAt") : data.get("expires_at"));
@@ -95,13 +95,13 @@ public class PassportLoginServiceImpl implements PassportLoginService {
     }
 
     @Override
-    public PassportLoginStatusVO getStatus(String sessionId) {
+    public IdentityLoginStatusVO getStatus(String sessionId) {
         Map<String, Object> session = getSession(sessionId);
         String code = string(session.get("authorizationCode"));
         if (code.isEmpty()) {
             Map<String, Object> request = nodeRequest(HttpMethod.GET,
                 "/api/v1/public/identity/authorize/request/" + string(session.get("requestId")), null);
-            PassportLoginStatusVO vo = new PassportLoginStatusVO();
+            IdentityLoginStatusVO vo = new IdentityLoginStatusVO();
             String status = defaultString(request.get("status"), "pending").toLowerCase();
             vo.setStatus(status);
             vo.setMessage(string(request.get("message")));
@@ -115,7 +115,7 @@ public class PassportLoginServiceImpl implements PassportLoginService {
         Map<String, Object> identity = nodeRequest(HttpMethod.POST, "/api/v1/public/identity/authorize/exchange", exchange);
         LoginVO login = loginByIdentity(identity);
         redisTemplate.delete(sessionKey(sessionId));
-        PassportLoginStatusVO vo = new PassportLoginStatusVO();
+        IdentityLoginStatusVO vo = new IdentityLoginStatusVO();
         vo.setStatus("approved");
         vo.setLogin(login);
         return vo;
@@ -131,7 +131,7 @@ public class PassportLoginServiceImpl implements PassportLoginService {
             return;
         }
         session.put("authorizationCode", code);
-        redisTemplate.opsForValue().set(sessionKey(state), session, Duration.ofSeconds(passportProperties.getSessionTtlSeconds()));
+        redisTemplate.opsForValue().set(sessionKey(state), session, Duration.ofSeconds(identityProperties.getSessionTtlSeconds()));
     }
 
     @Override
@@ -364,7 +364,7 @@ public class PassportLoginServiceImpl implements PassportLoginService {
     }
 
     private Map<String, Object> nodeRequest(HttpMethod method, String path, Map<String, Object> body) {
-        String baseUrl = required(passportProperties.getNodeBaseUrl(), "通行证登录未配置").replaceAll("/+$", "");
+        String baseUrl = required(identityProperties.getNodeBaseUrl(), "身份登录未配置").replaceAll("/+$", "");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -389,7 +389,7 @@ public class PassportLoginServiceImpl implements PassportLoginService {
         Object value = redisTemplate.opsForValue().get(sessionKey(sessionId));
         Map<String, Object> session = asMap(value);
         if (session.isEmpty()) {
-            throw new GlobalException("通行证登录二维码已过期，请重新发起登录");
+            throw new GlobalException("身份登录二维码已过期，请重新发起登录");
         }
         return session;
     }
@@ -408,7 +408,7 @@ public class PassportLoginServiceImpl implements PassportLoginService {
         if (value.isEmpty() || value.startsWith("http://") || value.startsWith("https://")) {
             return value;
         }
-        String baseUrl = required(passportProperties.getNodeBaseUrl(), "通行证登录未配置").replaceAll("/+$", "");
+        String baseUrl = required(identityProperties.getNodeBaseUrl(), "身份登录未配置").replaceAll("/+$", "");
         return baseUrl + (value.startsWith("/") ? value : "/" + value);
     }
 

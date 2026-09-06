@@ -6,7 +6,11 @@
 **/node_modules/
 **/dist/
 
-config/local/
+config/platform/
+config/server/
+config/rtc/
+config/web3-identity/
+config/runtime.env
 
 uniapp/package-lock.json
 

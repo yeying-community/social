@@ -178,10 +178,10 @@ minio:
   secretKey: <minio-secret-key>
   bucketName: yeying-social
 
-passport:
-  node-base-url: https://<passport-node-domain>
-  app-id: <passport-app-id>
-  callback-url: https://<social-domain>/api/passport/login/callback
+identity:
+  node-base-url: https://<identity-node-domain>
+  app-id: <identity-app-id>
+  callback-url: https://<social-domain>/api/identity/callback
   scopes: identity.basic,identity.username,identity.email,identity.wallet
   session-ttl-seconds: 300
 ```
