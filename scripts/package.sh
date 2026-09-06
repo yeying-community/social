@@ -157,15 +157,12 @@ if [[ -d "${ROOT_DIR}/web" ]]; then
   cp -R "${ROOT_DIR}/web/dist" "${STAGE_DIR}/web/"
 fi
 
-for script in starter.sh health-check.sh test.sh; do
-  script_path="${ROOT_DIR}/scripts/${script}"
-  if [[ ! -f "${script_path}" ]]; then
-    echo "ERROR: required package script not found: ${script_path}"
-    exit 1
-  fi
-  cp "${script_path}" "${STAGE_DIR}/scripts/${script}"
-  chmod +x "${STAGE_DIR}/scripts/${script}"
-done
+if [[ ! -d "${ROOT_DIR}/scripts" ]]; then
+  echo "ERROR: scripts directory not found: ${ROOT_DIR}/scripts"
+  exit 1
+fi
+cp -R "${ROOT_DIR}/scripts/." "${STAGE_DIR}/scripts/"
+find "${STAGE_DIR}/scripts" -type f -name "*.sh" -exec chmod +x {} \;
 
 if [[ ! -d "${ROOT_DIR}/tests/smoke" ]]; then
   echo "ERROR: smoke test resources not found: ${ROOT_DIR}/tests/smoke"
