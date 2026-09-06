@@ -9,8 +9,8 @@ import java.util.List;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "passport")
-public class PassportProperties {
+@ConfigurationProperties(prefix = "identity")
+public class IdentityProperties {
     private String nodeBaseUrl = "";
     private String appId = "";
     private String callbackUrl = "";

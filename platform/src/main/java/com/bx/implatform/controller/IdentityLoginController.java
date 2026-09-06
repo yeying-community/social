@@ -3,10 +3,10 @@ package com.bx.implatform.controller;
 import com.alibaba.fastjson.JSON;
 import com.bx.implatform.result.Result;
 import com.bx.implatform.result.ResultUtils;
-import com.bx.implatform.service.PassportLoginService;
+import com.bx.implatform.service.IdentityLoginService;
 import com.bx.implatform.vo.LoginVO;
-import com.bx.implatform.vo.PassportLoginSessionVO;
-import com.bx.implatform.vo.PassportLoginStatusVO;
+import com.bx.implatform.vo.IdentityLoginSessionVO;
+import com.bx.implatform.vo.IdentityLoginStatusVO;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,33 +22,28 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/passport")
-public class PassportLoginController {
-    private final PassportLoginService passportLoginService;
+@RequestMapping("/identity")
+public class IdentityLoginController {
+    private final IdentityLoginService identityLoginService;
 
     @PostMapping("/login/session")
-    public Result<PassportLoginSessionVO> createSession() {
-        return ResultUtils.success(passportLoginService.createSession());
+    public Result<IdentityLoginSessionVO> createSession() {
+        return ResultUtils.success(identityLoginService.createSession());
     }
 
-    @PostMapping("/identity/login/session")
-    public Result<PassportLoginSessionVO> createIdentitySession() {
-        return ResultUtils.success(passportLoginService.createSession());
-    }
-
-    @PostMapping("/identity/login/verify")
+    @PostMapping("/login/verify")
     public Result<LoginVO> verifyIdentityLogin(@RequestBody Map<String, Object> request) {
-        return ResultUtils.success(passportLoginService.verifyWalletPresentation(request));
+        return ResultUtils.success(identityLoginService.verifyWalletPresentation(request));
     }
 
     @GetMapping("/login/status")
-    public Result<PassportLoginStatusVO> getStatus(@RequestParam String sessionId) {
-        return ResultUtils.success(passportLoginService.getStatus(sessionId));
+    public Result<IdentityLoginStatusVO> getStatus(@RequestParam String sessionId) {
+        return ResultUtils.success(identityLoginService.getStatus(sessionId));
     }
 
     @GetMapping("/callback")
     public void callback(@RequestParam String code, @RequestParam String state, HttpServletResponse response) throws IOException {
-        passportLoginService.acceptCallback(code, state);
+        identityLoginService.acceptCallback(code, state);
         response.setContentType("text/html;charset=UTF-8");
         response.getWriter().write(callbackHtml(state));
     }
@@ -66,7 +61,7 @@ public class PassportLoginController {
             <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width,initial-scale=1">
-                <title>夜莺通行证</title>
+                <title>钱包身份</title>
                 <style>
                     html,body{margin:0;width:100%;height:100%;background:#f8f8f8;color:#202124;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
                     body{display:flex;align-items:center;justify-content:center}
@@ -91,10 +86,10 @@ public class PassportLoginController {
                                 }
                             } catch (e) {}
                             try {
-                                window.localStorage.setItem('__social_passport_callback__', JSON.stringify(payload));
+                                window.localStorage.setItem('__social_identity_callback__', JSON.stringify(payload));
                             } catch (e) {}
                             try {
-                                var channel = new BroadcastChannel('social-passport-login');
+                                var channel = new BroadcastChannel('social-identity-login');
                                 channel.postMessage(payload);
                                 channel.close();
                             } catch (e) {}

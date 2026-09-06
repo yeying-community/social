@@ -85,7 +85,6 @@ public class Web3AuthServiceImpl implements Web3AuthService {
         return vo;
     }
 
-    @Override
     public Web3ChallengeVO issueChallenge(Web3ChallengeDTO dto) {
         String address = normalizeAddress(dto.getAddress());
         String chainId = normalizeChainId(dto.getChainId());
@@ -131,7 +130,6 @@ public class Web3AuthServiceImpl implements Web3AuthService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    @Override
     public Web3VerifyVO verifyChallenge(Web3VerifyDTO dto) {
         String address = normalizeAddress(dto.getAddress());
         String chainId = normalizeChainId(null);

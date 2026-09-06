@@ -1,4 +1,4 @@
-import { createWalletIdentityLoginSession, verifyWalletIdentityLogin } from './passportAuth'
+import { createWalletIdentityLoginSession, verifyWalletIdentityLogin } from './identityAuth'
 
 let web3LibPromise = null
 

@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class PassportLoginSessionVO {
+public class IdentityLoginSessionVO {
     private String sessionId;
     private String requestId;
     private String appId;

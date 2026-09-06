@@ -22,8 +22,8 @@ public class MvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(xssInterceptor).addPathPatterns("/**").excludePathPatterns("/error");
         registry.addInterceptor(authInterceptor).addPathPatterns("/**")
             .excludePathPatterns("/error", "/login", "/logout", "/register", "/refreshToken","/*/upload", "/swagger/**", "/v3/api-docs/**",
-                "/passport/login/session", "/passport/login/status", "/passport/callback",
-                "/passport/identity/login/session", "/passport/identity/login/verify",
+                "/identity/login/session", "/identity/login/status", "/identity/callback",
+                "/identity/login/session", "/identity/login/verify",
                 "/swagger-resources/**", "/swagger-ui.html", "/swagger-ui/**", "/doc.html");
     }
 

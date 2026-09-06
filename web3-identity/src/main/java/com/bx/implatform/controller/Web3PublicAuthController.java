@@ -3,8 +3,6 @@ package com.bx.implatform.controller;
 import com.alibaba.fastjson.JSON;
 import com.bx.imcommon.util.JwtUtil;
 import com.bx.implatform.config.props.JwtProperties;
-import com.bx.implatform.dto.Web3ChallengeDTO;
-import com.bx.implatform.dto.Web3VerifyDTO;
 import com.bx.implatform.entity.User;
 import com.bx.implatform.exception.GlobalException;
 import com.bx.implatform.mapper.UserMapper;
@@ -13,7 +11,6 @@ import com.bx.implatform.result.ResultUtils;
 import com.bx.implatform.service.Web3AuthService;
 import com.bx.implatform.session.UserSession;
 import com.bx.implatform.vo.LoginVO;
-import com.bx.implatform.vo.Web3ChallengeVO;
 import com.bx.implatform.vo.Web3ProfileVO;
 import com.bx.implatform.vo.Web3VerifyVO;
 import com.bx.implatform.web3.UcanVerifier;
@@ -41,18 +38,6 @@ public class Web3PublicAuthController {
     private final JwtProperties jwtProperties;
     private final UserMapper userMapper;
     private final UcanVerifier ucanVerifier;
-
-    @PostMapping("/challenge")
-    @Operation(summary = "Issue challenge", description = "Issue a login challenge for wallet signature")
-    public Result<Web3ChallengeVO> challenge(@Valid @RequestBody Web3ChallengeDTO dto) {
-        return ResultUtils.success(web3AuthService.issueChallenge(dto));
-    }
-
-    @PostMapping("/verify")
-    @Operation(summary = "Verify challenge", description = "Verify signature and issue access token")
-    public Result<Web3VerifyVO> verify(@Valid @RequestBody Web3VerifyDTO dto) {
-        return ResultUtils.success(web3AuthService.verifyChallenge(dto));
-    }
 
     @PostMapping("/refresh")
     @Operation(summary = "Refresh token", description = "Refresh access token")
