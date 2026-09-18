@@ -163,7 +163,7 @@
 - 根据当前目录名识别模块名和版本包名。
 - 读取 `BACKUP_CONF_FLAG` 判断是否启用备份。
 - 检查 `config/` 目录、Nginx 配置和口令文件是否存在。
-- 将备份内容临时复制到 `/tmp/<module>-conf/`。
+- 将备份内容临时复制到 `/tmp/<module>-conf/`，其中 Nginx 配置直接保存为 `/tmp/<module>-conf/social.conf`，不再放入 `nginx/conf.d/` 子目录。
 - 生成加密备份文件：`/opt/backup/<prefix><module-basename><suffix>`。
 - 如果目标备份文件已存在，脚本退出并返回 `255`，避免覆盖已有备份。
 

@@ -99,8 +99,7 @@ main() {
     mkdir -p "$TMP_DIR" || fail "failed to create temp directory: $TMP_DIR"
 
     cp -a "$source_config" "$TMP_DIR/config" || fail "failed to copy config directory to temp directory"
-    mkdir -p "$TMP_DIR/nginx/conf.d" || fail "failed to create nginx config temp directory"
-    cp "$nginx_conf" "$TMP_DIR/nginx/conf.d/social.conf" || fail "failed to copy nginx config to temp directory"
+    cp "$nginx_conf" "$TMP_DIR/social.conf" || fail "failed to copy nginx config to temp directory"
 
     log "start config backup: $MODULE_DIR -> $backup_file"
 
