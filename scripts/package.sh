@@ -7,7 +7,7 @@ for command_name in mvn npm; do command -v "$command_name" >/dev/null 2>&1 || pa
 (cd "$PACKAGE_ROOT_DIR/web" && npm install --no-audit --no-fund && npm run build)
 (cd "$PACKAGE_ROOT_DIR" && mvn -B -DskipTests clean package)
 package_make_root social
-mkdir -p "$PACKAGE_DIR/bin" "$PACKAGE_DIR/config" "$PACKAGE_DIR/web"
+mkdir -p "$PACKAGE_DIR/bin" "$PACKAGE_DIR/config"
 for module in platform server rtc web3-identity; do
   jar="$PACKAGE_ROOT_DIR/$module/target/$module.jar"
   [[ -f "$jar" ]] || package_fail "required service artifact is missing: $jar"
@@ -18,7 +18,6 @@ for module in platform server rtc web3-identity; do
     find "$config_dir" -maxdepth 1 -type f \( -name 'application*.yml' -o -name logback.xml \) -exec cp {} "$PACKAGE_DIR/config/$module/" \;
   fi
 done
-cp -R "$PACKAGE_ROOT_DIR/web/dist" "$PACKAGE_DIR/web/dist"
 package_copy_scripts "$PACKAGE_DIR/scripts"
 package_strip_build_files "$PACKAGE_DIR"
 [[ ! -d "$PACKAGE_ROOT_DIR/tests" ]] || cp -R "$PACKAGE_ROOT_DIR/tests" "$PACKAGE_DIR/tests"
@@ -28,5 +27,10 @@ cat > "$PACKAGE_DIR/config/runtime.env.template" <<'ENV_TEMPLATE'
 # JAVA_BIN=java
 # JAVA_OPTS=-Xms512m\ -Xmx1024m
 ENV_TEMPLATE
-package_finish_artifact service-with-assets
+package_finish_artifact service
+
+package_make_root social-web
+PACKAGE_HEALTH_PATH=/index.html
+cp -R "$PACKAGE_ROOT_DIR/web/dist/." "$PACKAGE_DIR/"
+package_finish_artifact static
 package_finish
