@@ -13,13 +13,13 @@ Run the package script from a clean source checkout:
 The script creates an archive under `output/`:
 
 ```text
-output/social-vX.Y.Z-<commit>.tar.gz
+output/social-service-vX.Y.Z-<commit>.tar.gz
 ```
 
 After extracting the archive, the deployment directory contains:
 
 ```text
-social-vX.Y.Z-<commit>/
+social-service-vX.Y.Z-<commit>/
   bin/
     platform.jar
     server.jar
@@ -317,12 +317,12 @@ Changing `web/.env.production` after packaging does not change an already-built 
 
 ## Reverse Proxy
 
-Deploy `web/dist` using Nginx, CDN, object storage, or another static file server. The package startup script does not serve it.
+The package manifest publishes the backend services and `social-web` as separate artifacts. Deploy `social-web` to `/opt/deploy/static/social-web/current` using the standard static unit upgrader. Frontend and Java services can then be upgraded or rolled back independently.
 
 A typical production path mapping is:
 
 ```text
-/      -> web/dist static files
+/      -> /opt/deploy/static/social-web/current static files
 /api   -> platform:8888
 /rtc   -> rtc:8890
 /web3  -> web3-identity:8901
@@ -339,8 +339,8 @@ The frontend variables and reverse proxy rules must agree. For example, if `VUE_
 ./scripts/package.sh
 
 # On the production host.
-tar -xzf social-vX.Y.Z-<commit>.tar.gz
-cd social-vX.Y.Z-<commit>
+tar -xzf social-service-vX.Y.Z-<commit>.tar.gz
+cd social-service-vX.Y.Z-<commit>
 
 # Create runtime env.
 cp config/runtime.env.template config/runtime.env

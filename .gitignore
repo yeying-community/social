@@ -4,6 +4,7 @@
 *.log
 **/target/
 **/node_modules/
+package-lock.json
 **/dist/
 
 config/platform/
@@ -17,3 +18,7 @@ uniapp/package-lock.json
 examples/
 output/
 test-results/
+
+# YeYing Project local task state
+/.project/
+.playwright-cli
